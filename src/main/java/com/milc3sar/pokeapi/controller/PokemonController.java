@@ -1,7 +1,9 @@
 package com.milc3sar.pokeapi.controller;
 
 import com.milc3sar.pokeapi.domain.Pokemon;
+import com.milc3sar.pokeapi.domain.Type;
 import com.milc3sar.pokeapi.service.IPokemonService;
+import com.milc3sar.pokeapi.service.ITypeService;
 import com.milc3sar.pokeapi.util.PokemonUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -20,6 +22,10 @@ public class PokemonController {
     @Autowired
     @Qualifier(value = "pokemon-service")
     private IPokemonService pokemonService;
+
+    @Autowired
+    @Qualifier(value = "type-service")
+    private ITypeService typeService;
 
     @GetMapping(value = {"/", ""})
     public ResponseEntity<List<Pokemon>> getListPokemon() {
@@ -70,5 +76,23 @@ public class PokemonController {
 
         pokemonService.deleteById(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @PostMapping(value = "{id}/types/save")
+    public ResponseEntity<Object> addPokemonType(@PathVariable Long id, @RequestBody Map<String, Long> data) {
+        Optional<Pokemon> searchPokemon = Optional.ofNullable(pokemonService.findById(id));
+        Optional<Type> searchType = Optional.ofNullable(typeService.findById(data.get("id")));
+
+        if (!(searchPokemon.isPresent() && searchType.isPresent())) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        Pokemon pokemon = searchPokemon.orElseThrow();
+        Type type = searchType.orElseThrow();
+
+        pokemon.getTypes().add(type);
+        pokemonService.save(pokemon);
+
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }
